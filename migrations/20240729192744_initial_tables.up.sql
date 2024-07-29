@@ -1,0 +1,11 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+DROP TABLE IF EXISTS messages CASCADE;
+
+CREATE TABLE messages
+(
+    message_id  UUID PRIMARY KEY         DEFAULT uuid_generate_v4(),
+    content VARCHAR(5000) NOT NULL CHECK ( content <> '' ),
+    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    status BOOLEAN NOT NULL
+);
