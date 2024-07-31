@@ -2,7 +2,7 @@ serviceName: message_processing_service
 httpPort: :5001
 
 postgres:
-  PostgresqlHost: localhost
+  PostgresqlHost: db
   PostgresqlPort: 5432
   PostgresqlUser: postgres
   PostgresqlPassword: postgres
@@ -11,6 +11,12 @@ postgres:
   PgDriver: pgx
 
 kafka:
-  brokers: [ "localhost:9092" ]
+  brokers: [ "kafka:9092" ]
   groupID: message_processing_consumer
   initTopics: true
+
+kafkaTopics:
+  messageSaved:
+    topicName: message_saved
+    partitions: 5
+    replicationFactor: 1

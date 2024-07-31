@@ -17,19 +17,26 @@ func NewMessagesRepository(db *sqlx.DB) messages.Repository {
 }
 
 func (m *messageRepository) SaveMessage(ctx context.Context, message *models.Message) (*models.Message, error) {
-	var created models.Message
-	if err := m.db.QueryRowxContext(ctx, createMessageQuery, &message.MessageID, &message.Content, &message.Status).Scan(
-		&created.MessageID,
-		&created.Content,
-		&created.CreatedAt,
-		&created.UpdatedAt,
-	); err != nil {
+	created := &models.Message{}
+	if err := m.db.QueryRowxContext(ctx, createMessageQuery, &message.MessageID, &message.Content, &message.Status).StructScan(created); err != nil {
 		return nil, errors.Wrap(err, "db.QueryRow")
 	}
 
-	return &created, nil
+	return created, nil
 }
 
 func (m *messageRepository) UpdateMessage(ctx context.Context, message *models.Message) (*models.Message, error) {
-	return nil, nil
+	updated := &models.Message{}
+	if err := m.db.QueryRowxContext(ctx, updateMessageQuery, &message.MessageID).StructScan(updated); err != nil {
+		return nil, errors.Wrap(err, "db.QueryRow")
+	}
+	return updated, nil
+}
+
+func (m *messageRepository) GetMessagesStatistics(ctx context.Context) (*models.Statistics, error) {
+	statistics := &models.Statistics{}
+	if err := m.db.QueryRowxContext(ctx, getStatisticsQuery).StructScan(statistics); err != nil {
+		return nil, errors.Wrap(err, "db.QueryRow")
+	}
+	return statistics, nil
 }

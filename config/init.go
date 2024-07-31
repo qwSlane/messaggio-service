@@ -8,6 +8,7 @@ import (
 	"mesaggio-test/pkg/constants"
 	"mesaggio-test/pkg/kafka"
 	"os"
+	"strings"
 )
 
 var configPath string
@@ -21,6 +22,7 @@ type Config struct {
 	HttpPort    string
 	Postgres    PostgresConfig
 	Kafka       *kafka.Config
+	KafkaTopics KafkaTopics
 }
 
 type PostgresConfig struct {
@@ -31,6 +33,10 @@ type PostgresConfig struct {
 	PostgresqlDbname   string
 	PostgresqlSSLMode  bool
 	PgDriver           string
+}
+
+type KafkaTopics struct {
+	MessageSaved kafka.TopicConfig
 }
 
 func InitConfig() (*Config, error) {
@@ -63,6 +69,11 @@ func InitConfig() (*Config, error) {
 	httpPort := os.Getenv(constants.HttpPort)
 	if httpPort != "" {
 		cfg.HttpPort = httpPort
+	}
+
+	kafkaBrokers := os.Getenv(constants.KafkaBroker)
+	if kafkaBrokers != "" {
+		cfg.Kafka.Brokers = strings.Split(kafkaBrokers, ",")
 	}
 
 	return cfg, nil

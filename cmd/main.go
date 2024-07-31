@@ -8,6 +8,13 @@ import (
 	"mesaggio-test/pkg/postgres"
 )
 
+// @title Messaggio REST API
+// @version 1.0
+// @description Test task for messaggio
+// @contact.name Siarhei Vasileuski
+// @contact.url https://t.me/kataomione
+// @contact.email sergej.vasilewsckij@yandex.ru
+
 func main() {
 	cfg, err := config.InitConfig()
 	if err != nil {
@@ -18,9 +25,9 @@ func main() {
 
 	psqlDB, err := postgres.NewPsqlDB(cfg)
 	if err != nil {
-		appLogger.Fatalf("Postgresql init: %s", err)
+		appLogger.Fatalf("postgresql init: %s", err)
 	} else {
-		appLogger.Infof("Postgres connected, Status: %#v", psqlDB.Stats())
+		appLogger.Infof("postgres connected, Status: %#v", psqlDB.Stats())
 	}
 	defer psqlDB.Close()
 

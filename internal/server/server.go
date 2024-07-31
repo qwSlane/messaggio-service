@@ -3,9 +3,14 @@ package server
 import (
 	"context"
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"mesaggio-test/config"
+	_ "mesaggio-test/docs"
+	"mesaggio-test/internal/messages"
 	httpHandler "mesaggio-test/internal/messages/delivery/http"
+	kafkaHandler "mesaggio-test/internal/messages/delivery/kafka"
 	messagesRepository "mesaggio-test/internal/messages/repository"
 	"mesaggio-test/internal/messages/service"
 	"mesaggio-test/pkg/kafka"
@@ -32,16 +37,29 @@ func NewServer(cfg *config.Config, log *logrus.Logger, db *sqlx.DB) *Server {
 }
 
 func (s *Server) Run() error {
-
 	srv := &http.Server{
 		Addr:    s.cfg.HttpPort,
 		Handler: s.router,
 	}
 
-	s.MapHandlers()
-	//kafka producer
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 
-	//kafka consumer
+	err := s.initKafkaTopics(ctx)
+	if err != nil {
+		return errors.Wrap(err, "s.connectKafkaBrokers")
+	}
+
+	messageRepository := messagesRepository.NewMessagesRepository(s.db)
+	kafkaProducer := kafka.NewProducer(s.log, s.cfg.Kafka.Brokers)
+	msgService := service.NewMessagesService(s.log, s.cfg, messageRepository, kafkaProducer)
+
+	h := httpHandler.NewMessageHandler(s.log, msgService)
+	s.MapHandlers(h)
+
+	readerMessageProcessor := kafkaHandler.NewReaderMessageProcessor(s.log, s.cfg, msgService)
+	cg := kafka.NewConsumerGroup(s.cfg.Kafka.Brokers, s.cfg.Kafka.GroupID, s.log)
+	go cg.ConsumeTopic(ctx, s.getConsumerGroupTopics(), kafka.PoolSize, readerMessageProcessor.ProcessMessages)
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil {
@@ -50,24 +68,16 @@ func (s *Server) Run() error {
 	}()
 	s.log.Infof("http Server listen port: %v", s.cfg.HttpPort)
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-
-	<-quit
-	ctx, shutdown := context.WithTimeout(context.Background(), ctxTimeout*time.Second)
+	<-ctx.Done()
+	ctxShutdown, shutdown := context.WithTimeout(context.Background(), ctxTimeout*time.Second)
 	defer shutdown()
 
-	s.log.Info("Server Exited Properly")
-	return srv.Shutdown(ctx)
+	s.log.Info("server exited properly")
+	return srv.Shutdown(ctxShutdown)
 }
 
-func (s *Server) MapHandlers() {
-	messageRepository := messagesRepository.NewMessagesRepository(s.db)
-	kafkaProducer := kafka.NewProducer(s.log, s.cfg.Kafka.Brokers)
-
-	msgService := service.NewMessagesService(s.log, s.cfg, messageRepository, kafkaProducer)
-
-	h := httpHandler.NewMessageHandler(s.log, msgService)
-
+func (s *Server) MapHandlers(h messages.Handler) {
 	s.router.Handle("POST /msg", h.ReceiveMessage())
+	s.router.Handle("GET /stats", h.GetStatistics())
+	s.router.HandleFunc("GET /swagger/*", httpSwagger.Handler())
 }

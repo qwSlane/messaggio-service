@@ -1,0 +1,76 @@
+definitions:
+  models.CreatedResponse:
+    properties:
+      messageID:
+        type: string
+    type: object
+  models.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  models.Request:
+    properties:
+      content:
+        type: string
+    type: object
+  models.Statistics:
+    properties:
+      allMessages:
+        type: integer
+      lastProcessed:
+        type: string
+      processedMessages:
+        type: integer
+    type: object
+info:
+  contact:
+    email: sergej.vasilewsckij@yandex.ru
+    name: Siarhei Vasileuski
+    url: https://t.me/kataomione
+  description: Test task for messaggio
+  title: Messaggio REST API
+  version: "1.0"
+paths:
+  /msg:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Message content
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.Request'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.CreatedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Receive new message
+      tags:
+      - Comments
+  /stats:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Statistics'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get messages statistics
+      tags:
+      - Comments
+swagger: "2.0"

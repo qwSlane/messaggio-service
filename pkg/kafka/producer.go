@@ -18,7 +18,7 @@ type producer struct {
 }
 
 // NewProducer create new kafka producer
-func NewProducer(log *logrus.Logger, brokers []string) *producer {
+func NewProducer(log *logrus.Logger, brokers []string) Producer {
 	return &producer{log: log, brokers: brokers, w: NewWriter(brokers, kafka.LoggerFunc(log.Errorf))}
 }
 

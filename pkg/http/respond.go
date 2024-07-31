@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"mesaggio-test/internal/models"
 	"net/http"
 )
 
@@ -13,5 +14,5 @@ func Respond(w http.ResponseWriter, code int, data interface{}) {
 }
 
 func RespondError(w http.ResponseWriter, code int, err error) {
-	Respond(w, code, map[string]string{"error": err.Error()})
+	Respond(w, code, models.ErrorResponse{Error: err.Error()})
 }
